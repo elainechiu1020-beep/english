@@ -2,201 +2,158 @@
 <html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI 英文口說練習</title>
+    <title>English Coach - Ultimate Auto-Sync</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        body { background-color: #121212; color: #E0E0E0; font-family: 'Inter', sans-serif; }
-        .card { background: #1E1E1E; border: 1px solid #333; }
-        .correct { color: #4ADE80; font-weight: bold; }
-        .incorrect { color: #F87171; text-decoration: underline; }
-        .loading { animation: pulse 2s infinite; }
-        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+        body { background: #0b0f1a; color: #e2e8f0; font-family: sans-serif; }
+        .card { background: #161e2d; border: 1px solid #2d3748; }
+        .word-correct { color: #4ade80; font-weight: bold; }
+        .word-wrong { color: #f87171; text-decoration: line-through; opacity: 0.6; }
+        .log-box { font-family: monospace; font-size: 10px; color: #94a3b8; background: #000; padding: 10px; border-radius: 8px; max-height: 150px; overflow-y: auto; border: 1px solid #334155; }
     </style>
 </head>
-<body class="min-h-screen flex flex-col items-center p-4">
+<body class="min-h-screen flex items-center justify-center p-4">
 
-    <header class="w-full max-w-2xl mt-8 mb-6">
-        <h1 class="text-3xl font-bold text-center text-white mb-2">Oral Master <span class="text-blue-500">AI</span></h1>
-        <p class="text-gray-400 text-center">由 Gemini 驅動的隨機主題口說練習</p>
-    </header>
-
-    <section class="w-full max-w-2xl card p-6 rounded-2xl mb-6">
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-                <label class="block text-sm font-medium mb-1">Gemini API Key</label>
-                <input type="password" id="apiKey" placeholder="貼上您的 API Key" class="w-full bg-black border border-gray-700 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-blue-500">
-            </div>
-            <div>
-                <label class="block text-sm font-medium mb-1">選擇主題</label>
-                <select id="themeSelect" class="w-full bg-black border border-gray-700 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-blue-500">
-                    <option value="日常生活">日常生活</option>
-                    <option value="商務職場">商務職場</option>
-                    <option value="海外旅遊">海外旅遊</option>
-                    <option value="餐廳點餐">餐廳點餐</option>
-                    <option value="影視娛樂">影視娛樂</option>
-                    <option value="科技趨勢">科技趨勢</option>
-                    <option value="運動健身">運動健身</option>
-                    <option value="醫療健康">醫療健康</option>
-                    <option value="校園生活">校園生活</option>
-                    <option value="情緒表達">情緒表達</option>
+    <div class="w-full max-w-lg card rounded-[2.5rem] p-10 shadow-2xl">
+        <div id="setupView" class="space-y-6">
+            <h1 class="text-3xl font-black text-center text-white">ORAL <span class="text-blue-500 font-light">SYNC</span></h1>
+            
+            <div class="space-y-4">
+                <input type="password" id="apiKey" placeholder="在此貼上您的 API Key" 
+                       class="w-full bg-slate-900 border border-slate-700 rounded-2xl px-5 py-4 outline-none focus:border-blue-500 transition-all">
+                
+                <select id="themeSelect" class="w-full bg-slate-900 border border-slate-700 rounded-2xl px-5 py-4 appearance-none cursor-pointer">
+                    <option value="Daily conversation">☕ 日常生活練習</option>
+                    <option value="Job Interview">💼 職場英語面試</option>
+                    <option value="Travel English">✈️ 旅遊常用英文</option>
                 </select>
             </div>
-        </div>
-        <button onclick="generateQuestions()" id="genBtn" class="w-full mt-4 bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 rounded-lg transition">開始練習 (重新出題)</button>
-    </section>
 
-    <main id="practiceArea" class="w-full max-w-2xl hidden">
-        <div class="flex justify-between items-center mb-4">
-            <span id="progressText" class="text-blue-400 font-mono text-lg">Level 1/5</span>
-            <span id="difficultyTag" class="bg-blue-900 text-blue-200 text-xs px-2 py-1 rounded">簡單</span>
-        </div>
-
-        <div class="card p-8 rounded-3xl text-center shadow-2xl">
-            <p id="targetSentence" class="text-2xl md:text-3xl font-semibold mb-8 leading-relaxed"></p>
+            <button onclick="autoDiscoverAndStart()" id="startBtn" class="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-5 rounded-2xl shadow-lg active:scale-95 transition-all">
+                自動掃描並開始練習
+            </button>
             
-            <div id="feedback" class="text-xl min-h-[1.5em] mb-8"></div>
+            <div id="log" class="log-box">等待初始化...</div>
+        </div>
 
+        <!-- 練習區 (邏輯不變) -->
+        <div id="practiceView" class="hidden space-y-8 text-center">
+            <div class="flex justify-between text-[10px] font-bold text-slate-500">
+                <span id="progress">STEP 1 / 5</span>
+                <span class="text-blue-500">AI CONNECTED</span>
+            </div>
+            <p id="target" class="text-2xl font-semibold italic text-white"></p>
+            <div id="feedback" class="min-h-[4rem] p-4 bg-black/30 rounded-2xl flex flex-wrap justify-center gap-2 text-lg"></div>
             <div class="flex justify-center gap-6">
-                <button onclick="listenDemo()" class="group flex flex-col items-center">
-                    <div class="p-4 bg-gray-800 rounded-full group-hover:bg-gray-700 transition">
-                        🔊
-                    </div>
-                    <span class="text-xs mt-2 text-gray-500">聽示範</span>
-                </button>
-
-                <button onclick="startRecording()" id="micBtn" class="group flex flex-col items-center">
-                    <div id="micIcon" class="p-6 bg-red-600 rounded-full group-hover:bg-red-500 transition shadow-lg shadow-red-900/20">
-                        🎤
-                    </div>
-                    <span id="micStatus" class="text-xs mt-2 text-gray-500">點擊開始讀</span>
-                </button>
+                <button onclick="speak()" class="w-12 h-12 bg-slate-800 rounded-full">🔊</button>
+                <button onclick="toggleMic()" id="micBtn" class="w-20 h-20 bg-blue-600 rounded-full text-2xl shadow-xl">🎤</button>
+                <button onclick="next()" class="w-12 h-12 bg-slate-800 rounded-full">➔</button>
             </div>
         </div>
-
-        <div class="flex justify-between mt-8">
-            <button onclick="prevQuestion()" class="text-gray-500 hover:text-white transition">← 上一題</button>
-            <button onclick="nextQuestion()" class="text-blue-500 hover:text-blue-400 font-bold transition">下一題 →</button>
-        </div>
-    </main>
+    </div>
 
     <script>
         let questions = [];
-        let currentIndex = 0;
-        const recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
-        recognition.lang = 'en-US';
-        recognition.interimResults = false;
+        let cur = 0;
+        let isRecording = false;
+        const rec = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
+        rec.lang = 'en-US';
+        rec.onresult = (e) => handleResult(e.results[0][0].transcript);
+        rec.onend = () => { isRecording = false; document.getElementById('micBtn').classList.remove('animate-pulse', 'bg-red-500'); };
 
-        // 初始化：讀取儲存的 API Key
-        document.getElementById('apiKey').value = localStorage.getItem('gemini_key') || '';
+        function addLog(msg) {
+            const l = document.getElementById('log');
+            l.innerHTML += `<div>> ${msg}</div>`;
+            l.scrollTop = l.scrollHeight;
+        }
 
-        async function generateQuestions() {
-            const apiKey = document.getElementById('apiKey').value;
-            const theme = document.getElementById('themeSelect').value;
-            const genBtn = document.getElementById('genBtn');
-
-            if (!apiKey) return alert('請輸入 API Key');
-            localStorage.setItem('gemini_key', apiKey);
-
-            genBtn.innerText = 'AI 出題中...';
-            genBtn.disabled = true;
-
-            const prompt = `你是一個英文老師。請針對「${theme}」主題產生5個英文句子。
-            要求：
-            1. 難度由 Level 1 到 Level 5 漸進增加。
-            2. 格式必須是純 JSON，不要有 Markdown 標籤。
-            3. 格式範例：[{"text": "Hello world", "level": 1}, {"text": "...", "level": 2}]`;
+        async function autoDiscoverAndStart() {
+            const key = document.getElementById('apiKey').value.trim();
+            if (!key) return alert("請輸入 Key");
+            
+            const btn = document.getElementById('startBtn');
+            btn.disabled = true;
+            addLog("正在從 Google 伺服器獲取可用模型清單...");
 
             try {
-                const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`, {
+                // 第一步：呼叫 ListModels 看看這個 Key 到底能用什麼
+                const listResp = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${key}`);
+                const listData = await listResp.json();
+
+                if (listData.error) throw new Error(listData.error.message);
+
+                // 篩選出支援 generateContent 的模型，並優先挑選 flash
+                const availableModels = listData.models
+                    .filter(m => m.supportedGenerationMethods.includes("generateContent"))
+                    .map(m => m.name);
+
+                if (availableModels.length === 0) throw new Error("此 Key 沒有可用的生成模型。");
+
+                addLog(`找到 ${availableModels.length} 個模型。`);
+                
+                // 優先序：flash > pro > 其他
+                let bestModel = availableModels.find(m => m.includes("flash")) || availableModels[0];
+                addLog(`嘗試使用最佳模型: ${bestModel}`);
+
+                // 第二步：出題
+                const theme = document.getElementById('themeSelect').value;
+                const prompt = `Return a JSON array of 5 English sentences about ${theme}. Format: [{"t":"sentence"}]. No other text.`;
+                
+                const genResp = await fetch(`https://generativelanguage.googleapis.com/v1beta/${bestModel}:generateContent?key=${key}`, {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: {'Content-Type': 'application/json'},
                     body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
                 });
-                
-                const data = await response.json();
-                let rawText = data.candidates[0].content.parts[0].text;
-                // 清理可能出現的 markdown 語法
-                rawText = rawText.replace(/```json/g, '').replace(/```/g, '').trim();
-                questions = JSON.parse(rawText);
-                
-                currentIndex = 0;
-                showQuestion();
-                document.getElementById('practiceArea').classList.remove('hidden');
-            } catch (error) {
-                console.error(error);
-                alert('出題失敗，請檢查 API Key 或連線。');
-            } finally {
-                genBtn.innerText = '開始練習 (重新出題)';
-                genBtn.disabled = false;
+
+                const genData = await genResp.json();
+                const rawText = genData.candidates[0].content.parts[0].text;
+                questions = JSON.parse(rawText.match(/\[.*\]/s)[0]);
+
+                document.getElementById('setupView').classList.add('hidden');
+                document.getElementById('practiceView').classList.remove('hidden');
+                render();
+
+            } catch (e) {
+                addLog(`❌ 錯誤: ${e.message}`);
+                btn.disabled = false;
+                alert("初始化失敗，請看日誌細節。");
             }
         }
 
-        function showQuestion() {
-            const q = questions[currentIndex];
-            document.getElementById('targetSentence').innerText = q.text;
-            document.getElementById('progressText').innerText = `Level ${currentIndex + 1}/5`;
-            document.getElementById('feedback').innerHTML = '';
-            
-            const diffTags = ['簡單', '基礎', '中等', '進階', '挑戰'];
-            document.getElementById('difficultyTag').innerText = diffTags[currentIndex];
+        function render() {
+            document.getElementById('target').innerText = questions[cur].t;
+            document.getElementById('progress').innerText = `STEP ${cur+1} / 5`;
+            document.getElementById('feedback').innerHTML = "";
         }
 
-        function listenDemo() {
-            const msg = new SpeechSynthesisUtterance(questions[currentIndex].text);
-            msg.lang = 'en-US';
-            msg.rate = 0.9;
-            window.speechSynthesis.speak(msg);
-        }
-
-        function startRecording() {
-            recognition.start();
-            document.getElementById('micIcon').classList.add('loading');
-            document.getElementById('micStatus').innerText = '正在聆聽...';
-        }
-
-        recognition.onresult = (event) => {
-            const userSpeech = event.results[0][0].transcript.toLowerCase();
-            compareResult(userSpeech);
-        };
-
-        recognition.onend = () => {
-            document.getElementById('micIcon').classList.remove('loading');
-            document.getElementById('micStatus').innerText = '點擊開始讀';
-        };
-
-        function compareResult(speech) {
-            const target = questions[currentIndex].text.toLowerCase().replace(/[.,!?;]/g, "");
-            const targetWords = questions[currentIndex].text.split(' ');
-            const userWords = speech.split(' ');
-
-            const feedbackEl = document.getElementById('feedback');
-            feedbackEl.innerHTML = '';
-
-            targetWords.forEach(word => {
-                const cleanWord = word.toLowerCase().replace(/[.,!?;]/g, "");
-                const isCorrect = userWords.includes(cleanWord);
-                const span = document.createElement('span');
-                span.innerText = word + ' ';
-                span.className = isCorrect ? 'correct' : 'incorrect';
-                feedbackEl.appendChild(span);
-            });
-        }
-
-        function nextQuestion() {
-            if (currentIndex < 4) {
-                currentIndex++;
-                showQuestion();
-            } else {
-                alert('恭喜完成本主題所有練習！');
+        function toggleMic() {
+            if (isRecording) { rec.stop(); } 
+            else { 
+                rec.start(); isRecording = true;
+                document.getElementById('micBtn').classList.add('animate-pulse', 'bg-red-500');
             }
         }
 
-        function prevQuestion() {
-            if (currentIndex > 0) {
-                currentIndex--;
-                showQuestion();
-            }
+        function handleResult(s) {
+            const target = questions[cur].t;
+            const words = target.split(/\s+/);
+            const user = s.toLowerCase().replace(/[.,!?;]/g, "").split(/\s+/);
+            const html = words.map(w => {
+                const c = w.toLowerCase().replace(/[.,!?;]/g, "");
+                return `<span class="${user.includes(c) ? 'word-correct' : 'word-wrong'}">${w}</span>`;
+            }).join(" ");
+            document.getElementById('feedback').innerHTML = `<div class="w-full text-[10px] text-slate-500 mb-2 italic">You said: ${s}</div>` + html;
+        }
+
+        function speak() {
+            const u = new SpeechSynthesisUtterance(questions[cur].t);
+            u.lang = 'en-US';
+            window.speechSynthesis.speak(u);
+        }
+
+        function next() {
+            if (cur < 4) { cur++; render(); }
+            else { alert("練習完成！"); location.reload(); }
         }
     </script>
 </body>
